@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanbanex — Kanban em tempo real</title>
+  <meta name="description" content="Kanban colaborativo em tempo real: WebSocket relay próprio, presença online e drag & drop.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- LOGIN -->
+  <div id="tela-login" class="login">
+    <div class="login-caixa">
+      <h1>📋 Kanbanex</h1>
+      <p class="sub">kanban colaborativo em tempo real</p>
+      <input id="inp-nome" type="text" placeholder="nome (novo cadastro)" autocomplete="off">
+      <input id="inp-email" type="email" placeholder="e-mail" autocomplete="off">
+      <input id="inp-senha" type="password" placeholder="senha (mín. 6)">
+      <button id="btn-entrar" class="btn">Entrar / Criar conta</button>
+      <p id="login-erro" class="erro" hidden></p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <main id="app" hidden>
+    <header class="topo">
+      <h1>📋 Kanbanex</h1>
+      <span id="status" class="status">conectando…</span>
+      <span id="online" class="online" title="usuários neste quadro">👤 –</span>
+      <button id="btn-novo-quadro" class="btn pequeno">+ quadro</button>
+      <button id="btn-sair" class="btn pequeno cinza">sair</button>
+    </header>
+    <div class="barra-quadros" id="barra-quadros"></div>
+    <section id="quadro" class="quadro">
+      <div class="coluna" data-coluna="fazer">
+        <h2>A fazer <span class="add" data-coluna="fazer" title="adicionar cartão">+</span></h2>
+        <div class="cartoes" data-coluna="fazer"></div>
+      </div>
+      <div class="coluna" data-coluna="fazendo">
+        <h2>Fazendo <span class="add" data-coluna="fazendo" title="adicionar cartão">+</span></h2>
+        <div class="cartoes" data-coluna="fazendo"></div>
+      </div>
+      <div class="coluna" data-coluna="pronto">
+        <h2>Pronto ✅ <span class="add" data-coluna="pronto" title="adicionar cartão">+</span></h2>
+        <div class="cartoes" data-coluna="pronto"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

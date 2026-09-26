@@ -1,0 +1,14 @@
+services:
+  kanbanex:
+    build: .
+    ports:
+      - "3210:3210"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:-troque-em-producao}
+      KANBANEX_DB: /data/kanbanex.db
+    volumes:
+      - dados:/data
+    restart: unless-stopped
+
+volumes:
+  dados:

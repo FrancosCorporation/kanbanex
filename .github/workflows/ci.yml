@@ -1,0 +1,26 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - name: Build da imagem Docker (artifact)
+        run: docker build -t kanbanex:${{ github.sha }} .
+      - name: Trivy scan (HIGH,CRITICAL)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: kanbanex:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+      - name: Scan de licenças das dependências
+        run: npx license-checker --production --failOn "AGPL;GPL;LGPL;CC-BY-NC" || (echo "LICENÇA INCOMPATÍVEL ENCONTRADA" && exit 1)
