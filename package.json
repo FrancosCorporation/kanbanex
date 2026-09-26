@@ -1,12 +1,23 @@
 {
-  "name": "kanbanex",
-  "version": "0.1.0",
-  "description": "Kanban colaborativo em tempo real - relay WebSocket proprio + DnD + presenca",
-  "main": "server.js",
-  "type": "module",
-  "license": "MIT",
-  "author": "Rodolfo Franco (FrancosCorporation)",
-  "scripts": { "start": "node server.js", "test": "NODE_ENV=test node --test test/kanban-test.mjs" },
-  "dependencies": { "bcryptjs": "^2.4.3", "express": "^4.21.0", "jsonwebtoken": "^9.0.2", "ws": "^8.18.0" },
-  "engines": { "node": ">=22.5.0" }
+ "name": "kanbanex",
+ "version": "0.1.0",
+ "description": "Kanban colaborativo em tempo real - relay WebSocket proprio + DnD + presenca",
+ "main": "server.js",
+ "type": "module",
+ "license": "MIT",
+ "author": "Rodolfo Franco (FrancosCorporation)",
+ "scripts": {
+  "start": "node server.js",
+  "test": "NODE_ENV=test node --test test/kanban-test.mjs && node --test test/sync-yjs-test.mjs"
+ },
+ "dependencies": {
+  "bcryptjs": "^2.4.3",
+  "express": "^4.21.0",
+  "jsonwebtoken": "^9.0.2",
+  "ws": "^8.18.0",
+  "yjs": "^13.6.33"
+ },
+ "engines": {
+  "node": ">=22.5.0"
+ }
 }

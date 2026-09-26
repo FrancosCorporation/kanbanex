@@ -15,10 +15,11 @@ const PORTA = 3890;
 const BASE = `http://localhost:${PORTA}`;
 const dbArquivo = join(mkdtempSync(join(tmpdir(), 'kanbanex-')), 'teste.db');
 
-const servidor = spawn('node', ['server.js'], {
+const servidor = spawn("node", ["server.js"], {
   env: { ...process.env, NODE_ENV: 'test', PORT: String(PORTA), KANBANEX_DB: dbArquivo },
-  stdio: 'ignore'
+  stdio: "ignore"
 });
+servidor.unref();
 await new Promise((r) => setTimeout(r, 1200));
 
 const chamar = (metodo, rota, corpo, token) =>

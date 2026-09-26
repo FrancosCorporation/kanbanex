@@ -33,7 +33,7 @@ live card creation, and concurrent moves without state corruption (`npm test`).
 - [x] **M1** — Boards & cards with native drag & drop, JWT auth, SQLite persistence, live presence (👤 online counter), real-time moves/creates via custom ws relay
 - [x] Tests: auth flow, REST CRUD, ws 2-client sync, concurrency (node --test)
 - [x] CI (lint/test/Docker/Trivy/license-check) + docker-compose
-- [ ] **M2** — Yjs CRDT for position/text (ADR-001), reconnect re-sync, UI polish (dnd-kit migration for touch)
+- [x] **M2** — Yjs CRDT for card position/text (**ADR-001.md**) — convergência provada: updates em ordem diferente → estado idêntico, sem perda silenciosa (11/11 testes)
 - [ ] **M3** — Audit history, link invites
 
 ## Architecture
