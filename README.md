@@ -34,7 +34,8 @@ live card creation, and concurrent moves without state corruption (`npm test`).
 - [x] Tests: auth flow, REST CRUD, ws 2-client sync, concurrency (node --test)
 - [x] CI (lint/test/Docker/Trivy/license-check) + docker-compose
 - [x] **M2** — Yjs CRDT for card position/text (**ADR-001.md**) — convergência provada: updates em ordem diferente → estado idêntico, sem perda silenciosa (11/11 testes)
-- [ ] **M3** — Audit history, link invites
+- [x] **M3** — **Convites por link** (token 16 chars, expiração, contador de usos) +
+      **auditoria completa** (histórico de ações com usuário/detalhe, atividade por usuário) — 16/16 testes
 
 ## Architecture
 
