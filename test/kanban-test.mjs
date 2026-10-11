@@ -74,8 +74,8 @@ test('TEMPO REAL: 2 clientes veem o mesmo movimento + presença', async () => {
   const a = new WebSocket(`ws://localhost:${PORTA}`);
   const b = new WebSocket(`ws://localhost:${PORTA}`);
   await Promise.all([new Promise((r) => a.on('open', r)), new Promise((r) => b.on('open', r))]);
-  a.send(JSON.stringify({ type: 'join', boardId: quadroId }));
-  b.send(JSON.stringify({ type: 'join', boardId: quadroId }));
+  a.send(JSON.stringify({ type: 'join', boardId: quadroId, token }));
+  b.send(JSON.stringify({ type: 'join', boardId: quadroId, token }));
   await new Promise((r) => setTimeout(r, 400));
 
   const eventosB = [];
@@ -102,8 +102,8 @@ test('TEMPO REAL: cartão criado via ws chega ao outro cliente', async () => {
   const a = new WebSocket(`ws://localhost:${PORTA}`);
   const b = new WebSocket(`ws://localhost:${PORTA}`);
   await Promise.all([new Promise((r) => a.on('open', r)), new Promise((r) => b.on('open', r))]);
-  a.send(JSON.stringify({ type: 'join', boardId: quadroId }));
-  b.send(JSON.stringify({ type: 'join', boardId: quadroId }));
+  a.send(JSON.stringify({ type: 'join', boardId: quadroId, token }));
+  b.send(JSON.stringify({ type: 'join', boardId: quadroId, token }));
   await new Promise((r) => setTimeout(r, 400));
 
   const eventosB = [];
@@ -125,8 +125,8 @@ test('concorrência: 2 moves simultâneos do mesmo cartão não corrompem o esta
   const a = new WebSocket(`ws://localhost:${PORTA}`);
   const b = new WebSocket(`ws://localhost:${PORTA}`);
   await Promise.all([new Promise((r) => a.on('open', r)), new Promise((r) => b.on('open', r))]);
-  a.send(JSON.stringify({ type: 'join', boardId: quadroId }));
-  b.send(JSON.stringify({ type: 'join', boardId: quadroId }));
+  a.send(JSON.stringify({ type: 'join', boardId: quadroId, token }));
+  b.send(JSON.stringify({ type: 'join', boardId: quadroId, token }));
   await new Promise((r) => setTimeout(r, 400));
   // dois moves quase simultâneos (colunas diferentes)
   a.send(JSON.stringify({ type: 'card-move', cardId: cartao.id, coluna: 'pronto', posicao: 0, por: 'A' }));

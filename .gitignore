@@ -3,7 +3,12 @@ node_modules/
 dist/
 *.log
 node_modules/
-kanbanex.db
 *.db
+*.db-*
+*.sqlite
+*.sqlite3
 .env
+.env.*
+!.env.example
 dist/
+*.log

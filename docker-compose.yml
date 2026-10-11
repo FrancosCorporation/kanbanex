@@ -2,9 +2,10 @@ services:
   kanbanex:
     build: .
     ports:
-      - "3210:3210"
+      - "127.0.0.1:${PORT:-3210}:${PORT:-3210}"
     environment:
-      JWT_SECRET: ${JWT_SECRET:-troque-em-producao}
+      PORT: ${PORT:-3210}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no ambiente ou no arquivo .env}
       KANBANEX_DB: /data/kanbanex.db
     volumes:
       - dados:/data

@@ -2,9 +2,12 @@
 const $ = (s) => document.querySelector(s);
 
 let TOKEN = localStorage.getItem('kanbanex_token') || null;
-let USUARIO = localStorage.getItem('kanbanex_usuario') || '';
+let USUARIO = localStorage.getItem('kanbanex_usuario_id') || null;
+let NOME_USUARIO = localStorage.getItem('kanbanex_usuario') || '';
 let quadroAtivo = null;
 let ws = null;
+let wsAutenticado = false;
+let modoConta = 'login';
 
 // ---------- API ----------
 async function api(caminho, opts = {}) {
@@ -19,34 +22,46 @@ async function api(caminho, opts = {}) {
 }
 
 // ---------- login ----------
+$('#btn-alternar').addEventListener('click', () => {
+  modoConta = modoConta === 'login' ? 'register' : 'login';
+  const cadastro = modoConta === 'register';
+  $('#inp-nome').hidden = !cadastro;
+  $('#label-nome').hidden = !cadastro;
+  $('#inp-senha').autocomplete = cadastro ? 'new-password' : 'current-password';
+  $('#btn-entrar').textContent = cadastro ? 'Criar conta' : 'Entrar';
+  $('#btn-alternar').textContent = cadastro ? 'Já tenho uma conta' : 'Criar uma conta';
+  $('#login-erro').hidden = true;
+});
+
 $('#btn-entrar').addEventListener('click', async () => {
   const nome = $('#inp-nome').value.trim();
   const email = $('#inp-email').value.trim();
   const senha = $('#inp-senha').value;
+  const botao = $('#btn-entrar');
+  botao.disabled = true;
   try {
-    let dados;
-    try {
-      dados = await api('/login', { method: 'POST', body: { email, senha } });
-    } catch (e) {
-      if (e.status === 401 && nome && senha.length >= 6) {
-        await api('/register', { method: 'POST', body: { nome, email, senha } });
-        dados = await api('/login', { method: 'POST', body: { email, senha } });
-      } else throw e;
-    }
+    if (modoConta === 'register') await api('/register', { method: 'POST', body: { nome, email, senha } });
+    const dados = await api('/login', { method: 'POST', body: { email, senha } });
     TOKEN = dados.token;
-    USUARIO = dados.usuario.nome;
+    USUARIO = dados.usuario.id;
+    NOME_USUARIO = dados.usuario.nome;
     localStorage.setItem('kanbanex_token', TOKEN);
-    localStorage.setItem('kanbanex_usuario', USUARIO);
+    localStorage.setItem('kanbanex_usuario_id', USUARIO);
+    localStorage.setItem('kanbanex_usuario', NOME_USUARIO);
     abrirApp();
   } catch (e) {
     const el = $('#login-erro');
     el.hidden = false;
-    el.textContent = e.message;
+    el.textContent = e.status === 409 ? 'Este e-mail já tem uma conta. Entre com sua senha.' : e.message;
+  } finally {
+    botao.disabled = false;
   }
 });
 
 $('#btn-sair').addEventListener('click', () => {
-  localStorage.clear();
+  localStorage.removeItem('kanbanex_token');
+  localStorage.removeItem('kanbanex_usuario_id');
+  localStorage.removeItem('kanbanex_usuario');
   location.reload();
 });
 
@@ -57,21 +72,30 @@ function abrirApp() {
   carregarQuadros();
 }
 
-async function carregarQuadros() {
-  let quadros = await api('/boards');
-  if (quadros.length === 0) {
-    quadros = [await api('/boards', { method: 'POST', body: { nome: 'Meu quadro' } })];
+async function carregarQuadros(preferido = null) {
+  try {
+    let quadros = await api('/boards');
+    if (quadros.length === 0) {
+      quadros = [await api('/boards', { method: 'POST', body: { nome: 'Meu quadro' } })];
+    }
+    $('#barra-quadros').replaceChildren();
+    for (const q of quadros) {
+      const b = document.createElement('button');
+      b.className = 'q-tab';
+      b.textContent = q.nome;
+      b.dataset.id = q.id;
+      b.onclick = () => selecionarQuadro(q.id);
+      $('#barra-quadros').appendChild(b);
+    }
+    selecionarQuadro(quadros.find((q) => q.id === preferido)?.id || quadros[0].id);
+  } catch (e) {
+    if (e.status === 401) {
+      localStorage.removeItem('kanbanex_token');
+      localStorage.removeItem('kanbanex_usuario_id');
+      localStorage.removeItem('kanbanex_usuario');
+      location.reload();
+    } else alert('Não foi possível carregar os quadros. ' + e.message);
   }
-  $('#barra-quadros').innerHTML = '';
-  for (const q of quadros) {
-    const b = document.createElement('button');
-    b.className = 'q-tab';
-    b.textContent = q.nome;
-    b.dataset.id = q.id;
-    b.onclick = () => selecionarQuadro(q.id);
-    $('#barra-quadros').appendChild(b);
-  }
-  selecionarQuadro(quadros[0].id);
 }
 
 function selecionarQuadro(id) {
@@ -84,15 +108,19 @@ function selecionarQuadro(id) {
 // ---------- websocket (tempo real) ----------
 let wsRetry = 0;
 function conectarWs(boardId) {
-  if (ws) { ws.boardId = null; ws.close(); }
+  if (ws) { ws.boardId = null; wsAutenticado = false; ws.close(); }
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${proto}//${location.host}`);
-  ws.onopen = () => { wsRetry = 0; setStatus(true); ws.send(JSON.stringify({ type: 'join', boardId })); };
-  ws.onclose = () => { setStatus(false); if (quadroAtivo === boardId && wsRetry++ < 5) setTimeout(() => conectarWs(boardId), 1500); };
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen = () => { wsRetry = 0; wsAutenticado = false; setStatus(false); ws.send(JSON.stringify({ type: 'join', boardId, token: TOKEN })); };
+  ws.onclose = () => { wsAutenticado = false; setStatus(false); if (quadroAtivo === boardId && wsRetry++ < 5) setTimeout(() => conectarWs(boardId), 1500); };
+  ws.onerror = () => setStatus(false);
   ws.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
+    let msg;
+    try { msg = JSON.parse(ev.data); } catch { return; }
+    if (msg.type === 'joined') { wsAutenticado = true; setStatus(true); $('#online').textContent = `👤 ${msg.online}`; }
+    if (msg.type === 'error') setStatus(false);
     if (msg.type === 'presence') $('#online').textContent = `👤 ${msg.online}`;
-    if (msg.type === 'card-move') moverNoDom(msg.cardId, msg.coluna, msg.posicao, msg.por);
+    if (msg.type === 'card-move') moverNoDom(msg.cardId, msg.coluna, msg.posicao, msg.nome || msg.por, msg.por);
     if (msg.type === 'card-create') adicionarNoDom(msg.cartao, true);
   };
 }
@@ -115,7 +143,7 @@ function adicionarNoDom(cartao, destacado) {
   if (destacado) setTimeout(() => div.classList.remove('recente'), 2500);
 }
 
-function moverNoDom(cardId, coluna, posicao, por) {
+function moverNoDom(cardId, coluna, posicao, por, porId = por) {
   const el = document.querySelector(`.cartao[data-id="${cardId}"]`);
   if (!el) return location.reload(); // cartão novo p/ este quadro: recarrega
   const destino = $(`.cartoes[data-coluna="${coluna}"]`);
@@ -123,7 +151,7 @@ function moverNoDom(cardId, coluna, posicao, por) {
   destino.insertBefore(el, referencia || null);
   el.classList.add('recente');
   setTimeout(() => el.classList.remove('recente'), 2500);
-  if (por && por !== USUARIO) flashUsuario(el, por);
+  if (por && porId !== USUARIO) flashUsuario(el, por);
 }
 
 function flashUsuario(el, por) {
@@ -160,7 +188,11 @@ document.querySelectorAll('.cartoes').forEach((zona) => {
     const referencia = zona.children[pos];
     zona.insertBefore(el, referencia || null);
     // broadcast
-    ws.send(JSON.stringify({ type: 'card-move', cardId, coluna, posicao: pos, por: USUARIO }));
+    if (!wsAutenticado || !ws || ws.readyState !== WebSocket.OPEN) {
+      api(`/boards/${quadroAtivo}`).then(({ cartoes }) => renderizar(cartoes)).catch(() => {});
+      return;
+    }
+    ws.send(JSON.stringify({ type: 'card-move', cardId, coluna, posicao: pos }));
   });
 });
 
@@ -169,9 +201,8 @@ document.querySelectorAll('.add').forEach((btn) => {
   btn.addEventListener('click', async () => {
     const titulo = prompt('Título do cartão:');
     if (!titulo) return;
+    if (!wsAutenticado || !ws || ws.readyState !== WebSocket.OPEN) return alert('Aguarde a conexão segura com o quadro.');
     const coluna = btn.dataset.coluna;
-    const cartao = await api(`/boards/${quadroAtivo}/cards`, { method: 'POST', body: { titulo, coluna } });
-    adicionarNoDom(cartao, true);
     ws.send(JSON.stringify({ type: 'card-create', titulo, coluna }));
   });
 });
@@ -180,11 +211,19 @@ $('#btn-novo-quadro').addEventListener('click', async () => {
   const nome = prompt('Nome do quadro:');
   if (!nome) return;
   const q = await api('/boards', { method: 'POST', body: { nome } });
-  carregarQuadros();
-  selecionarQuadro(q.id);
+  await carregarQuadros(q.id);
 });
 
 // ---------- boot ----------
-if (TOKEN) {
-  api('/boards').then(abrirApp).catch(() => { localStorage.clear(); location.reload(); });
-}
+if (TOKEN) api('/boards').then(abrirApp).catch((e) => {
+  if (e.status === 401) {
+    localStorage.removeItem('kanbanex_token');
+    localStorage.removeItem('kanbanex_usuario_id');
+    localStorage.removeItem('kanbanex_usuario');
+    location.reload();
+  } else {
+    const erro = $('#login-erro');
+    erro.hidden = false;
+    erro.textContent = 'Não foi possível conectar ao servidor. Tente novamente.';
+  }
+});

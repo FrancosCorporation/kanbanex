@@ -530,3 +530,29 @@ git ls-files | grep -c '\\.db$'   # 0
 
 *Fim do plano. Gerado por leitura direta do código em 2026-10-02. Nenhum item já estava corrigido*
 *— todos apontam para defeitos ainda presentes.*
+
+## Registro de execução — 2026-10-11
+
+`src/auth.js` já tinha uma alteração local para remover o fallback, mas aceitava segredo de qualquer
+tamanho. Ela foi preservada e completada com mínimo de 32 bytes, validação HS256 e claims `sub`.
+Foram implementados SEC-01–07, SEC-02/03 (404 uniforme), BUG-03/04/05 e auditoria de criação e
+movimento no relay. O WebSocket valida JWT e dono no `join`, ignora autoria enviada pelo cliente,
+limita a carga a 1 MiB, até 100 conexões globais/10 por IP, autenticação inicial e inatividade; salas
+vazias são removidas. O REST agora filtra quadro por dono.
+
+Yjs continua no módulo de demonstração, mas não foi ligado ao relay: a seção 9 exige validação de
+convergência antes da integração e esta sessão não executa testes. O ADR e o README foram corrigidos
+para marcar M2 como pendente. A auditoria M3 agora é gravada e consultável pela rota privada de
+histórico; convites continuam sem rotas, pois concedê-los exigiria definir acesso de convidados ou
+compartilhamento entre contas, fora do modelo de dono único descrito na seção 9. BUG-06/IMP-01 ficam
+pendentes junto com a exposição segura dos convites.
+
+`kanbanex.db` já não estava no índice quando a revisão começou e já era coberto por `.gitignore`; o
+arquivo local foi preservado. O `.gitignore` agora também cobre arquivos auxiliares e `.env.*`.
+Compose exige segredo e publica em loopback; foram adicionados `.env.example`,
+`.dockerignore`, SECURITY.md e documentação coerente com o estado HTTP/WS. A tela de login agora
+separa entrar de criar conta, evitando interpretar senha errada como novo cadastro.
+
+Nenhum teste, build ou CI foi executado. Os clientes WebSocket dos testes existentes foram
+atualizados para enviar JWT no `join`; nenhum caso novo foi acrescentado. TEST-01/02 e a validação
+final permanecem pendentes, e os checkboxes do DoD ficam abertos até validação autorizada.

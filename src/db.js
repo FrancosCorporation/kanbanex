@@ -2,6 +2,7 @@
 import { DatabaseSync } from 'node:sqlite';
 
 export const db = new DatabaseSync(process.env.KANBANEX_DB || 'kanbanex.db');
+db.exec('PRAGMA busy_timeout = 5000');
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS usuarios (
@@ -25,3 +26,10 @@ CREATE TABLE IF NOT EXISTS cartoes (
 );
 CREATE INDEX IF NOT EXISTS idx_cartoes_quadro ON cartoes (quadro_id, coluna, posicao);
 `);
+
+const emailsDuplicados = db.prepare('SELECT 1 FROM usuarios GROUP BY lower(email) HAVING COUNT(*) > 1 LIMIT 1').get();
+if (!emailsDuplicados) {
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS ux_usuarios_email_canonico ON usuarios (lower(email))');
+} else {
+  console.warn('[Kanbanex] Há contas com e-mails que diferem apenas por maiúsculas/minúsculas; índice normalizado não criado.');
+}
